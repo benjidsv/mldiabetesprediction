@@ -1,8 +1,10 @@
 import pandas as pd
+from sklearn.model_selection import train_test_split
 import numpy as np
 import seaborn as sns
 from matplotlib import pyplot as plt
 from sklearn.preprocessing import StandardScaler
+from scipy.stats import gaussian_kde
 
 # Load the dataset
 data = pd.read_csv('dataset/diabetes_binary_5050split_health_indicators_BRFSS2015.csv')
@@ -13,7 +15,8 @@ data['Normalized_BMI'] = scaler.fit_transform(data[['BMI']])
 data['Normalized_Age'] = scaler.fit_transform(data[['Age']])
 
 # Create BMI categories
-data['BMI_Category'] = pd.cut(data['BMI'], bins=[0, 18.5, 24.9, 29.9, 100], labels=["Underweight", "Normal", "Overweight", "Obese"])
+data['BMI_Category'] = pd.cut(data['BMI'], bins=[0, 18.5, 24.9, 29.9, 100],
+                              labels=["Underweight", "Normal", "Overweight", "Obese"])
 
 # Log-transform MentHlth and PhysHlth
 data['Log_MentHlth'] = np.log1p(data['MentHlth'])
@@ -25,7 +28,8 @@ data['PhysActivity_BMI'] = data['PhysActivity'] * data['BMI']
 data['Socioeconomics_NoDoc'] = data['Income'] * data['Education'] * data['NoDocbcCost']
 
 # Drop less relevant features
-columns_to_drop = ['BMI', 'Age', 'MentHlth', 'PhysHlth', 'Education', 'Income', 'NoDocbcCost', 'AnyHealthcare', 'Fruits']
+columns_to_drop = ['BMI', 'Age', 'MentHlth', 'PhysHlth', 'Education', 'Income', 'NoDocbcCost', 'AnyHealthcare',
+                   'Fruits']
 data = data.drop(columns=columns_to_drop)
 
 # 4. Scatter Plots for Key Features
@@ -33,7 +37,9 @@ sns.pairplot(data, vars=['HighBP'], hue='Diabetes_binary', diag_kind='kde')
 plt.show()
 
 # 5. Boxplots for Outliers
-for column in ['HighBP', 'HighChol', 'CholCheck', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Veggies', 'HvyAlcoholConsump', 'GenHlth', 'DiffWalk', 'Sex', 'Normalized_BMI', 'Normalized_Age', 'BMI_Category', 'Log_MentHlth', 'Log_PhysHlth', 'HighBP_HeartDisease', 'PhysActivity_BMI', 'Socioeconomics_NoDoc']:
+for column in ['HighBP', 'HighChol', 'CholCheck', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Veggies',
+               'HvyAlcoholConsump', 'GenHlth', 'DiffWalk', 'Sex', 'Normalized_BMI', 'Normalized_Age', 'BMI_Category',
+               'Log_MentHlth', 'Log_PhysHlth', 'HighBP_HeartDisease', 'PhysActivity_BMI', 'Socioeconomics_NoDoc']:
     plt.figure(figsize=(8, 4))
     sns.boxplot(x='Diabetes_binary', y=column, data=data)
     plt.title(f'{column} vs Diabetes_binary')
@@ -42,8 +48,6 @@ for column in ['HighBP', 'HighChol', 'CholCheck', 'Smoker', 'Stroke', 'HeartDise
     plt.show()
 
 # 6. Overlap Analysis
-from scipy.stats import gaussian_kde
-
 def calculate_overlap(X_class0, X_class1):
     kde_class0 = gaussian_kde(X_class0)
     kde_class1 = gaussian_kde(X_class1)
@@ -53,10 +57,14 @@ def calculate_overlap(X_class0, X_class1):
     overlap_area = np.trapz(np.minimum(pdf_class0, pdf_class1), x_range)
     return x_range, pdf_class0, pdf_class1, overlap_area
 
+
 X_class0 = data[data['Diabetes_binary'] == 0]
 X_class1 = data[data['Diabetes_binary'] == 1]
 
-for feature_name in ['HighBP', 'HighChol', 'CholCheck', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity', 'Veggies', 'HvyAlcoholConsump', 'GenHlth', 'DiffWalk', 'Sex', 'Normalized_BMI', 'Normalized_Age', 'BMI_Category', 'Log_MentHlth', 'Log_PhysHlth', 'HighBP_HeartDisease', 'PhysActivity_BMI', 'Socioeconomics_NoDoc']:
+for feature_name in ['HighBP', 'HighChol', 'CholCheck', 'Smoker', 'Stroke', 'HeartDiseaseorAttack', 'PhysActivity',
+                     'Veggies', 'HvyAlcoholConsump', 'GenHlth', 'DiffWalk', 'Sex', 'Normalized_BMI', 'Normalized_Age',
+                     'BMI_Category', 'Log_MentHlth', 'Log_PhysHlth', 'HighBP_HeartDisease', 'PhysActivity_BMI',
+                     'Socioeconomics_NoDoc']:
     x_range, pdf_class0, pdf_class1, overlap_area = calculate_overlap(X_class0[feature_name], X_class1[feature_name])
     plt.figure(figsize=(8, 4))
     plt.plot(x_range, pdf_class0, label='Class 0')
@@ -67,3 +75,12 @@ for feature_name in ['HighBP', 'HighChol', 'CholCheck', 'Smoker', 'Stroke', 'Hea
     plt.ylabel('Density')
     plt.legend()
     plt.show()
+
+X = data.drop(columns=['Diabetes_binary'])
+y = data['Diabetes_binary']
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_state=42, stratify=y)
+
+
+# Function to return train/test splits
+def get_data():
+    return X_train, X_test, y_train, y_test
